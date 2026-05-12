@@ -49,6 +49,7 @@ firebase deploy --only apphosting:smartflow-ai
 - Secrets de Gemini e OAuth configurados no Secret Manager.
 - Gemini validado em `/api/gemini/test`.
 - Inicio do login Google validado com redirecionamento OAuth.
+- Frontend principal atualizado para a interface do app `2º Cérebro TDAH`.
 
 ## Gemini/OAuth
 
