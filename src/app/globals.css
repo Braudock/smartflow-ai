@@ -90,13 +90,30 @@ a {
 .brand-mark {
   align-items: center;
   background: var(--orange);
+  border: 0;
   border-radius: 12px;
   color: #fff;
+  cursor: pointer;
   display: flex;
-  font-weight: 900;
   height: 38px;
   justify-content: center;
   width: 38px;
+}
+
+.brand-mark span {
+  font-size: 27px;
+  font-weight: 300;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.brand-mark:focus-visible,
+.floating-add:focus-visible,
+.quick-add:focus-visible,
+.tab:focus-visible,
+.icon-link:focus-visible {
+  outline: 3px solid rgba(255, 107, 0, 0.26);
+  outline-offset: 3px;
 }
 
 .tabs {

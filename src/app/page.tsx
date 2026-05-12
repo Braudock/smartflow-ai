@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 
 type Task = {
   id: number;
@@ -59,6 +59,7 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState("");
+  const draftInputRef = useRef<HTMLInputElement>(null);
 
   const todayTasks = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -119,14 +120,31 @@ export default function Home() {
     setTasks((current) => current.filter((task) => task.id !== id));
   }
 
+  function openCapture() {
+    setActiveTab("Captura");
+    window.setTimeout(() => draftInputRef.current?.focus(), 0);
+  }
+
+  function resetHome() {
+    setActiveTab("Hoje");
+    setQuery("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <main className="workspace">
-      <h1 className="app-title">2º Cérebro TDAH</h1>
+      <h1 className="app-title">2o Cerebro TDAH</h1>
       <section className="phone-shell" aria-label="2 Cerebro TDAH">
         <header className="topbar">
-          <div className="brand-mark" aria-hidden="true">
-            ||
-          </div>
+          <button
+            aria-label="Voltar para hoje"
+            className="brand-mark"
+            onClick={resetHome}
+            title="Voltar para hoje"
+            type="button"
+          >
+            <span aria-hidden="true">+</span>
+          </button>
           <nav className="tabs" aria-label="Navegacao principal">
             {tabs.map((tab) => (
               <button
@@ -166,6 +184,7 @@ export default function Home() {
             <input
               onChange={(event) => setDraft(event.target.value)}
               placeholder="Capturar uma tarefa..."
+              ref={draftInputRef}
               value={draft}
             />
           </label>
@@ -245,7 +264,7 @@ export default function Home() {
 
         <button
           className="floating-add"
-          onClick={() => setActiveTab("Captura")}
+          onClick={openCapture}
           title="Nova tarefa"
           type="button"
         >
