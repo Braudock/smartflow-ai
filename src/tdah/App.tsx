@@ -670,23 +670,25 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-slate-900 font-sans selection:bg-orange-100 pb-20">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#FDFCFB]/80 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-2xl mx-auto flex flex-col">
-          <div className="px-3 md:px-4 h-14 md:h-16 flex items-center justify-between gap-2 md:gap-4">
-            <div className="min-w-0">
-              <Logo size="sm" iconOnly={window.innerWidth < 380} />
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#FDFCFB]/90 backdrop-blur-md border-b border-slate-100">
+        <div className="relative max-w-2xl mx-auto flex flex-col">
+          <div className="px-4 h-14 md:h-16 flex items-center justify-between gap-3">
+            <div className="min-w-0 flex items-center gap-2">
+              <div className="sm:hidden">
+                <Logo size="sm" iconOnly />
+              </div>
+              <div className="hidden sm:block">
+                <Logo size="sm" />
+              </div>
+              <span className="sm:hidden max-w-[8.5rem] truncate text-sm font-black uppercase tracking-tight text-slate-900">
+                2º Cérebro
+              </span>
             </div>
-            <nav className="flex bg-slate-100 p-1 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-wider overflow-x-auto no-scrollbar whitespace-nowrap">
-              <button onClick={() => setActiveTab('capture')} className={`px-3 md:px-4 py-2 rounded-xl transition-all ${activeTab === 'capture' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}>Captura</button>
-              <button onClick={() => setActiveTab('today')} className={`px-3 md:px-4 py-2 rounded-xl transition-all ${activeTab === 'today' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}>Hoje ({todayRecords.length})</button>
-              <button onClick={() => setActiveTab('dashboard')} className={`px-3 md:px-4 py-2 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}>Dashboard</button>
-              <button onClick={() => setActiveTab('history')} className={`px-3 md:px-4 py-2 rounded-xl transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}>Histórico</button>
-            </nav>
-            <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               {!isOnline && (
                 <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 text-red-500 rounded-lg text-[8px] font-black uppercase mr-1 animate-pulse" title="Modo Offline Ativo">
                   <WifiOff size={10} />
-                  <span>Offline</span>
+                  <span className="hidden min-[390px]:inline">Offline</span>
                 </div>
               )}
               {!notificationsEnabled && (
@@ -710,6 +712,14 @@ export default function App() {
               </button>
             </div>
           </div>
+          <div className="px-3 pb-2 md:absolute md:left-1/2 md:top-3 md:w-auto md:-translate-x-1/2 md:px-0 md:pb-0">
+            <nav className="grid grid-cols-4 bg-slate-100 p-1 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
+              <button onClick={() => setActiveTab('capture')} className={`px-2 md:px-4 py-2 rounded-xl transition-all ${activeTab === 'capture' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}>Captura</button>
+              <button onClick={() => setActiveTab('today')} className={`px-2 md:px-4 py-2 rounded-xl transition-all ${activeTab === 'today' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}>Hoje ({todayRecords.length})</button>
+              <button onClick={() => setActiveTab('dashboard')} className={`px-2 md:px-4 py-2 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}>Dash</button>
+              <button onClick={() => setActiveTab('history')} className={`px-2 md:px-4 py-2 rounded-xl transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}>Histórico</button>
+            </nav>
+          </div>
           {todayRecords.length > 0 && (
             <div className="bg-white/50 px-4 py-1.5 border-t border-slate-100 flex items-center justify-between gap-4">
               <span className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-tighter truncate">{encourageMessage}</span>
@@ -728,7 +738,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 pt-24 text-slate-900">
+      <main className="max-w-2xl mx-auto px-3 min-[390px]:px-4 pt-36 md:pt-24 text-slate-900">
         {activeTab === 'capture' && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-slate-900">
             {error && (
@@ -794,7 +804,7 @@ export default function App() {
         )}
 
         {(activeTab === 'history' || activeTab === 'today') && (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <div className="relative group">
               <input 
                 type="text" 
@@ -833,7 +843,7 @@ export default function App() {
           </div>
         )}
       </main>
-      {activeTab !== 'capture' && <button onClick={() => setActiveTab('capture')} className="fixed bottom-8 right-8 w-14 h-14 bg-orange-500 text-white rounded-2xl shadow-xl shadow-orange-500/20 flex items-center justify-center hover:scale-105 transition-all"><Plus size={28} /></button>}
+      {activeTab !== 'capture' && <button onClick={() => setActiveTab('capture')} className="fixed bottom-6 right-5 md:bottom-8 md:right-8 w-14 h-14 bg-orange-500 text-white rounded-2xl shadow-xl shadow-orange-500/20 flex items-center justify-center hover:scale-105 transition-all"><Plus size={28} /></button>}
 
       <AnimatePresence>
         {focusedRecordId && (

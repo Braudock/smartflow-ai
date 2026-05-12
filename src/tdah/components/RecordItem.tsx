@@ -9,7 +9,8 @@ import {
   MapPin, 
   Lightbulb, 
   Calendar, 
-  AlertCircle 
+  Navigation,
+  Map
 } from 'lucide-react';
 import { BrainEntry, BrainType, BrainPriority, BrainStatus } from '../services/geminiService';
 
@@ -75,9 +76,9 @@ export function RecordItem({ record, onDelete, onUpdate, onFocus, getTypeColor, 
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }} 
       exit={{ opacity: 0, scale: 0.9 }} 
-      className={`bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-4 md:p-8 space-y-4 md:space-y-6 transition-opacity ${isCompleted ? 'opacity-60 grayscale-[0.5]' : ''}`}
+      className={`bg-white rounded-[1.75rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm p-4 md:p-8 space-y-4 md:space-y-6 transition-opacity ${isCompleted ? 'opacity-60 grayscale-[0.5]' : ''}`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <div className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest border uppercase ${getTypeColor(record.tipo)}`}>{record.tipo}</div>
           {!isCompleted && (
@@ -91,26 +92,26 @@ export function RecordItem({ record, onDelete, onUpdate, onFocus, getTypeColor, 
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center justify-end gap-1.5 md:gap-4 shrink-0">
           {!isCompleted && onFocus && (
             <button 
               onClick={() => onFocus(record)}
-              className="p-1 px-3 flex items-center gap-1.5 text-orange-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-all"
+              className="p-1 px-2 md:px-3 flex items-center gap-1.5 text-orange-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-all"
               title="Entrar em Modo Foco"
             >
               <Target size={14} />
-              <span className="text-[10px] font-black uppercase tracking-tight">Focar</span>
+              <span className="hidden min-[390px]:inline text-[10px] font-black uppercase tracking-tight">Focar</span>
             </button>
           )}
           {record.hasPendingWrites && (
             <CloudUpload size={14} className="text-orange-400 animate-bounce" />
           )}
-          <span className="text-[10px] font-mono font-bold text-slate-300">{record.timestamp}</span>
+          <span className="hidden min-[430px]:inline text-[10px] font-mono font-bold text-slate-300">{record.timestamp}</span>
           <button onClick={onDelete} className="p-1 text-slate-200 hover:text-red-500 transition-all"><X size={16} /></button>
         </div>
       </div>
 
-      <div className="flex gap-4 md:gap-6 items-start">
+      <div className="flex gap-3 md:gap-6 items-start">
         <button 
           onClick={toggleStatus}
           className={`shrink-0 mt-1 w-6 h-6 md:w-8 md:h-8 rounded-xl border-2 flex items-center justify-center transition-all ${isCompleted ? 'bg-orange-500 border-orange-500 text-white' : 'border-slate-200 text-transparent hover:border-orange-200'}`}
@@ -146,7 +147,7 @@ export function RecordItem({ record, onDelete, onUpdate, onFocus, getTypeColor, 
               </div>
             </div>
           ) : (
-            <p onClick={() => setIsEditing(true)} className={`text-lg md:text-2xl font-bold text-slate-800 leading-tight cursor-pointer hover:bg-slate-50 transition-all rounded-xl p-2 -m-2 break-words ${isCompleted ? 'line-through text-slate-400' : ''}`}>
+            <p onClick={() => setIsEditing(true)} className={`text-[1.05rem] min-[390px]:text-lg md:text-2xl font-bold text-slate-800 leading-snug md:leading-tight cursor-pointer hover:bg-slate-50 transition-all rounded-xl p-2 -m-2 break-words ${isCompleted ? 'line-through text-slate-400' : ''}`}>
               {record.conteudo}
             </p>
           )}
@@ -171,7 +172,34 @@ export function RecordItem({ record, onDelete, onUpdate, onFocus, getTypeColor, 
                 <button onClick={addToCalendar} className="px-3 py-1.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase transition-all">+ Agenda</button>
               </div>
             )}
-            {record.local && <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase max-w-full overflow-hidden truncate"><MapPin size={12} className="shrink-0" />{record.local}</div>}
+            {record.local && (
+              <div className="w-full min-w-0 rounded-2xl bg-emerald-50/80 p-2 text-emerald-700">
+                <div className="flex items-center gap-2 px-1 pb-2 text-[10px] font-black uppercase">
+                  <MapPin size={13} className="shrink-0" />
+                  <span className="truncate">{record.local}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href={record.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(record.local)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[10px] font-black uppercase text-emerald-700 shadow-sm active:scale-95"
+                  >
+                    <Map size={13} />
+                    Maps
+                  </a>
+                  <a
+                    href={record.wazeUrl || `https://waze.com/ul?q=${encodeURIComponent(record.local)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[10px] font-black uppercase text-blue-600 shadow-sm active:scale-95"
+                  >
+                    <Navigation size={13} />
+                    Waze
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
