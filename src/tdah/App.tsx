@@ -95,6 +95,9 @@ export default function App() {
   const [focusedRecordId, setFocusedRecordId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const keepRecordingRef = useRef(false);
+  const finalTranscriptRef = useRef('');
+  const restartTimeoutRef = useRef<number | null>(null);
   const scheduledNotifications = useRef<Set<string>>(new Set());
   const alertSound = useRef<HTMLAudioElement | null>(null);
 
@@ -282,18 +285,48 @@ export default function App() {
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'pt-BR';
       recognitionRef.current.onresult = (event: any) => {
-        let transcript = '';
+        let interimTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscriptRef.current = `${finalTranscriptRef.current}${transcript} `.replace(/\s+/g, ' ');
+          } else {
+            interimTranscript += transcript;
+          }
         }
-        setInput(transcript);
+        setInput(`${finalTranscriptRef.current}${interimTranscript}`.trimStart());
       };
-      recognitionRef.current.onend = () => setIsRecording(false);
-      recognitionRef.current.onerror = (e: any) => {
-        console.error('Speech recognition error', e.error);
+      recognitionRef.current.onend = () => {
+        if (keepRecordingRef.current) {
+          restartTimeoutRef.current = window.setTimeout(() => {
+            try {
+              recognitionRef.current?.start();
+              setIsRecording(true);
+            } catch {
+              // Chrome can throw if it is still closing the previous session.
+            }
+          }, 250);
+          return;
+        }
+
         setIsRecording(false);
       };
+      recognitionRef.current.onerror = (e: any) => {
+        console.error('Speech recognition error', e.error);
+        if (['not-allowed', 'service-not-allowed', 'audio-capture'].includes(e.error)) {
+          keepRecordingRef.current = false;
+          setIsRecording(false);
+        }
+      };
     }
+
+    return () => {
+      keepRecordingRef.current = false;
+      if (restartTimeoutRef.current) {
+        window.clearTimeout(restartTimeoutRef.current);
+      }
+      recognitionRef.current?.abort?.();
+    };
   }, []);
 
   const handleLogin = async () => {
@@ -314,10 +347,22 @@ export default function App() {
   const toggleRecording = () => {
     if (!recognitionRef.current) return alert('Não suportado');
     if (isRecording) {
+      keepRecordingRef.current = false;
+      if (restartTimeoutRef.current) {
+        window.clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = null;
+      }
       recognitionRef.current.stop();
+      setIsRecording(false);
     } else {
-      recognitionRef.current.start();
-      setIsRecording(true);
+      keepRecordingRef.current = true;
+      finalTranscriptRef.current = input.trim() ? `${input.trim()} ` : '';
+      try {
+        recognitionRef.current.start();
+        setIsRecording(true);
+      } catch {
+        setIsRecording(true);
+      }
     }
   };
 

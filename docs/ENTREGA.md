@@ -57,6 +57,7 @@ firebase deploy --only firestore,apphosting:smartflow-ai
 - Layout mobile ajustado para nao espremer logo, abas e acoes.
 - Cards com local agora exibem botoes `Maps` e `Waze`.
 - Botao flutuante `+` abre a aba Captura.
+- Microfone mantem a escuta ativa e reinicia automaticamente quando o navegador encerra uma sessao de fala.
 - Commit da correcao mobile: `12d6c7d Improve mobile layout and map actions`.
 
 ## Frontend publicado
@@ -79,6 +80,7 @@ Header em duas linhas no celular.
 Cards menos apertados.
 Texto quebra linha dentro do card.
 Maps e Waze aparecem como botoes clicaveis.
+Microfone continua captando ate o usuario tocar novamente para parar.
 ```
 
 ## Gemini/OAuth

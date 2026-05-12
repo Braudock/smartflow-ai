@@ -74,3 +74,13 @@ Checklist visual no celular:
 - Botao flutuante `+` abre Captura.
 - Card com local deve mostrar botoes `Maps` e `Waze`.
 - Texto do card deve quebrar linha sem sair da area branca.
+
+## Microfone
+
+Checklist manual no Chrome mobile:
+
+- Abrir a aba Captura.
+- Tocar no botao de microfone.
+- Falar por mais tempo, incluindo pausas curtas.
+- Confirmar que o texto continua acumulando.
+- Tocar no microfone novamente para parar.
