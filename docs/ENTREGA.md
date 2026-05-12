@@ -35,7 +35,7 @@ cd C:\CODEX\smartflow-ai
 npm install
 npm run dev
 npm run build
-firebase deploy --only apphosting:smartflow-ai
+firebase deploy --only firestore,apphosting:smartflow-ai
 ```
 
 ## Status atual
@@ -47,9 +47,13 @@ firebase deploy --only apphosting:smartflow-ai
 - Deploy publicado e validado com HTTP 200.
 - `/api/health` publicado e respondendo.
 - Secrets de Gemini e OAuth configurados no Secret Manager.
-- Gemini validado em `/api/gemini/test`.
+- Gemini validado em `/api/gemini/process`.
+- App Hosting usa Vertex AI com a service account `firebase-app-hosting-compute@gen-lang-client-0013019253.iam.gserviceaccount.com`.
 - Inicio do login Google validado com redirecionamento OAuth.
-- Frontend principal atualizado para a interface do app `2º Cérebro TDAH`.
+- Frontend original do AI Studio incorporado ao Next.js em `src/tdah`.
+- Interface publicada como app `2o Cerebro TDAH`, com captura, hoje, dashboard, historico e modo foco.
+- Regras do Firestore copiadas e publicadas para o banco `ai-studio-86450f86-9de0-45ef-bf17-0a8402310807`.
+- Rota `/api/gemini/process` criada para usar Gemini no servidor sem expor a chave no navegador.
 
 ## Gemini/OAuth
 
@@ -69,3 +73,11 @@ https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app/api/auth
 ```
 
 Observacao: a tela de consentimento OAuth pode limitar logins enquanto o app estiver em modo de teste ou sem verificacao do Google.
+
+## Pasta completa
+
+Uma copia do projeto, sem `node_modules`, `.next` e `.git`, fica em:
+
+```text
+C:\CODEX\SMARTFLOW_AI_PROJETO_COMPLETO_2026-05-12
+```

@@ -11,5 +11,11 @@
         ".next"
       ]
     }
+  ],
+  "firestore": [
+    {
+      "database": "ai-studio-86450f86-9de0-45ef-bf17-0a8402310807",
+      "rules": "firestore.rules"
+    }
   ]
 }

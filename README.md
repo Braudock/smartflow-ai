@@ -1,6 +1,6 @@
 # SmartFlow AI
 
-Base inicial do app SmartFlow AI para GitHub, Firebase App Hosting, Google OAuth, Gemini e Google APIs.
+App SmartFlow AI / 2o Cerebro TDAH publicado em Firebase App Hosting com login Google, Firestore e Gemini.
 
 ## Como rodar localmente
 
@@ -23,7 +23,8 @@ Nunca commite `.env.local`, chaves reais, `client_secret*.json` ou arquivos de c
 
 ## Rotas principais
 
-- `/` painel inicial e checklist tecnico.
+- `/` frontend principal do app 2o Cerebro TDAH.
+- `/api/gemini/process` processa capturas do app com Gemini.
 - `/api/health` verifica configuracao basica.
 - `/api/gemini/test` testa Gemini via POST.
 - `/api/auth/google` inicia OAuth Google.
@@ -46,6 +47,12 @@ Este app e Next.js com rotas API. Por isso, use Firebase App Hosting, nao apenas
 
 ```text
 https://SEU-BACKEND.web.app/api/auth/callback/google
+```
+
+Para publicar App Hosting e regras do Firestore:
+
+```bash
+firebase deploy --only firestore,apphosting:smartflow-ai
 ```
 
 O App Hosting roda `npm run build` com `next build`; este projeto nao usa pasta `dist`.
