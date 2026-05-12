@@ -2,13 +2,50 @@
 
 ## Gemini
 
-Rota local:
+Rotas:
 
 ```text
+POST /api/gemini/process
 POST /api/gemini/test
 ```
 
-Usa `GEMINI_API_KEY`.
+`/api/gemini/process` e a rota usada pelo frontend. Ela recebe texto livre, chama Vertex AI/Gemini no servidor e retorna uma estrutura pronta para o app.
+
+Exemplo de entrada:
+
+```json
+{
+  "text": "Ir para o armazem do MercadoLivre BRSP-04 as 23:00"
+}
+```
+
+Campos esperados na resposta:
+
+```text
+tipo
+prioridade
+conteudo
+insight
+tags
+dataHoraDetectada
+local
+mapsUrl
+wazeUrl
+```
+
+O App Hosting usa Vertex AI por Application Default Credentials com a service account:
+
+```text
+firebase-app-hosting-compute@gen-lang-client-0013019253.iam.gserviceaccount.com
+```
+
+Ela precisa manter permissao:
+
+```text
+roles/aiplatform.user
+```
+
+`GEMINI_API_KEY` continua configurada como secret legado/fallback, mas o caminho funcional de producao e Vertex AI.
 
 ## OAuth Google
 
@@ -28,11 +65,48 @@ AUTH_SECRET
 AUTH_URL
 ```
 
+Callback de producao:
+
+```text
+https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app/api/auth/callback/google
+```
+
 ## Google APIs previstas
 
-- Gmail: enviar e-mail primeiro com `gmail.send`.
-- Drive: arquivos criados pelo app com `drive.file`.
-- Sheets: logs e grid operacional com `spreadsheets`.
-- Calendar: eventos com `calendar.events`.
+- Calendar: o app pode criar eventos quando ha token OAuth e data detectada.
+- Gmail: escopo `gmail.send` reservado para envio futuro de e-mail.
+- Drive: escopo `drive.file` reservado para arquivos criados pelo app.
+- Sheets: escopo `spreadsheets` reservado para logs/grid operacional futuro.
 
-As rotas operacionais dessas APIs devem ser criadas depois que o login OAuth estiver validado.
+## Firestore
+
+O frontend sincroniza registros em:
+
+```text
+users/{uid}/records
+users/{uid}/stats
+users/{uid}/settings/general
+```
+
+Regras publicadas em:
+
+```text
+firestore.rules
+```
+
+Banco usado:
+
+```text
+ai-studio-86450f86-9de0-45ef-bf17-0a8402310807
+```
+
+## Maps e Waze
+
+Quando `local` existe, a API gera:
+
+```text
+mapsUrl=https://www.google.com/maps/search/?api=1&query=...
+wazeUrl=https://waze.com/ul?q=...
+```
+
+O componente `src/tdah/components/RecordItem.tsx` mostra os botoes `Maps` e `Waze`.

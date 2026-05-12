@@ -1,19 +1,43 @@
 # Google Cloud
 
-Projetos mantidos:
+Projeto em uso:
 
 | Ambiente | Projeto | ID |
 |---|---|---|
-| Principal | SmartFlow AI | gen-lang-client-0013019253 |
-| Testes | SANDBOX | smartflow-sandbox-2026 |
-| Producao | AUTOMACOES-PROD | smartflow-automacoes-prod |
+| Producao | APIPSICOLOGIA / SmartFlow AI | gen-lang-client-0013019253 |
 
-APIs previstas:
+APIs usadas/publicadas:
 
-- Gemini API
+- Vertex AI API
+- Firebase App Hosting
+- Firestore
+- Firebase Auth / Identity Toolkit
+- Secret Manager
+
+APIs com escopo OAuth preparado:
+
 - Gmail API
 - Google Drive API
 - Google Sheets API
 - Google Calendar API
 
-Antes de producao, confirmar se o aviso de pagamento foi resolvido em Faturamento > Visao geral do pagamento.
+## Vertex AI
+
+Gemini em producao usa Vertex AI com:
+
+```text
+model: gemini-2.5-flash
+location: us-central1
+```
+
+Service account autorizada:
+
+```text
+firebase-app-hosting-compute@gen-lang-client-0013019253.iam.gserviceaccount.com
+```
+
+Permissao:
+
+```text
+roles/aiplatform.user
+```

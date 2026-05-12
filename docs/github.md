@@ -1,9 +1,9 @@
 # GitHub
 
-Repositorio recomendado:
+Repositorio atual:
 
 ```text
-smartflow-ai
+https://github.com/Braudock/smartflow-ai
 ```
 
 ## Deve entrar no GitHub
@@ -21,13 +21,17 @@ smartflow-ai
 - Arquivos `client_secret*.json`.
 - Arquivos de conta de servico.
 
-## Primeiro envio sugerido
+## Historico importante
+
+```text
+65f7504 Port AI Studio frontend to Firebase App Hosting
+12d6c7d Improve mobile layout and map actions
+```
+
+## Envio de novas mudancas
 
 ```bash
-git init
 git add .
-git commit -m "Cria base inicial do SmartFlow AI"
-git branch -M main
-git remote add origin https://github.com/SEU-USUARIO/smartflow-ai.git
-git push -u origin main
+git commit -m "Descreva a mudanca"
+git push origin main
 ```

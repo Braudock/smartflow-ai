@@ -1,14 +1,30 @@
 # Firebase App Hosting
 
-## Deploy inicial
+## Estado atual
 
-1. Criar repositorio GitHub `smartflow-ai`.
-2. Enviar o codigo.
-3. Fazer login no Firebase CLI.
-4. Criar um backend App Hosting pelo CLI ou pelo Firebase Console.
-5. Criar os secrets no Google Cloud Secret Manager.
-6. Atualizar `AUTH_URL` em `apphosting.yaml` com a URL publica gerada.
-7. Atualizar OAuth Google com a URL publica.
+Backend publicado:
+
+```text
+smartflow-ai
+```
+
+URL:
+
+```text
+https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app
+```
+
+Regiao:
+
+```text
+us-central1
+```
+
+Projeto Firebase:
+
+```text
+gen-lang-client-0013019253
+```
 
 ## Comando pelo CLI
 
@@ -29,7 +45,13 @@ O script cria o backend `smartflow-ai` na regiao `us-central1`. Para trocar:
 Este repositorio ja contem `firebase.json` apontando para o backend `smartflow-ai`.
 
 ```powershell
-firebase deploy --only apphosting:smartflow-ai
+firebase deploy --only firestore,apphosting:smartflow-ai --project gen-lang-client-0013019253
+```
+
+Use apenas App Hosting quando nao houver mudanca em regras do Firestore:
+
+```powershell
+firebase deploy --only apphosting:smartflow-ai --project gen-lang-client-0013019253
 ```
 
 ## Secrets
@@ -45,10 +67,27 @@ auth-secret
 
 O backend `smartflow-ai` tem permissao de leitura nesses secrets.
 
+Observacao: Gemini em producao esta funcionando via Vertex AI e service account. `gemini-api-key` fica mantido como secret/fallback.
+
+## Service account Vertex AI
+
+Service account do App Hosting:
+
+```text
+firebase-app-hosting-compute@gen-lang-client-0013019253.iam.gserviceaccount.com
+```
+
+Permissao necessaria:
+
+```text
+roles/aiplatform.user
+```
+
 ## Variaveis
 
 ```text
 AUTH_URL=https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app
+VERTEX_AI_LOCATION=us-central1
 GOOGLE_OAUTH_SCOPES=openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar.events
 ```
 
@@ -57,3 +96,14 @@ GOOGLE_OAUTH_SCOPES=openid email profile https://www.googleapis.com/auth/gmail.s
 ```text
 https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app/api/auth/callback/google
 ```
+
+## Frontend publicado
+
+`src/app/page.tsx` carrega `src/tdah/App.tsx` sem SSR. O app publicado inclui:
+
+- Login Google.
+- Captura e processamento Gemini.
+- Firestore offline/cache.
+- Dashboard, Hoje, Historico e Modo Foco.
+- Layout mobile corrigido.
+- Botoes Maps/Waze nos cards com local.

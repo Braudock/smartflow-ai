@@ -1,6 +1,18 @@
 # SmartFlow AI
 
-App SmartFlow AI / 2o Cerebro TDAH publicado em Firebase App Hosting com login Google, Firestore e Gemini.
+App SmartFlow AI / 2o Cerebro TDAH publicado em Firebase App Hosting com login Google, Firestore, Vertex AI/Gemini, Google Maps e Waze.
+
+URL publicada:
+
+```text
+https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app
+```
+
+Repositorio:
+
+```text
+https://github.com/Braudock/smartflow-ai
+```
 
 ## Como rodar localmente
 
@@ -24,11 +36,25 @@ Nunca commite `.env.local`, chaves reais, `client_secret*.json` ou arquivos de c
 ## Rotas principais
 
 - `/` frontend principal do app 2o Cerebro TDAH.
-- `/api/gemini/process` processa capturas do app com Gemini.
+- `/api/gemini/process` processa capturas do app com Vertex AI/Gemini e retorna local, Google Maps e Waze quando houver endereco.
 - `/api/health` verifica configuracao basica.
-- `/api/gemini/test` testa Gemini via POST.
+- `/api/gemini/test` testa Vertex AI/Gemini via POST.
 - `/api/auth/google` inicia OAuth Google.
 - `/api/auth/callback/google` recebe retorno OAuth Google.
+
+## Frontend
+
+O frontend original do AI Studio foi portado para `src/tdah` e carregado por `src/app/page.tsx`.
+
+Funcionalidades publicadas:
+
+- Login Google com Firebase Auth.
+- Captura de tarefas, compromissos, compras, lembretes e ideias.
+- Sincronizacao em Firestore.
+- Dashboard, Hoje, Historico e Modo Foco.
+- Botao flutuante `+` abrindo a aba Captura.
+- Cards mobile ajustados para nao ficarem espremidos.
+- Acoes de local com botoes `Maps` e `Waze`.
 
 ## Deploy no Firebase App Hosting
 
@@ -42,11 +68,11 @@ Este app e Next.js com rotas API. Por isso, use Firebase App Hosting, nao apenas
    - `google-client-id`
    - `google-client-secret`
    - `auth-secret`
-5. Em `apphosting.yaml`, troque `AUTH_URL` pela URL real do backend Firebase.
+5. Em `apphosting.yaml`, confirme `AUTH_URL` e `VERTEX_AI_LOCATION`.
 6. No Google Cloud Console, adicione a URL de callback OAuth:
 
 ```text
-https://SEU-BACKEND.web.app/api/auth/callback/google
+https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app/api/auth/callback/google
 ```
 
 Para publicar App Hosting e regras do Firestore:

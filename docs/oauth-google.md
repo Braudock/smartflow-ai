@@ -22,12 +22,20 @@ http://localhost:3000/api/auth/callback/google
 
 ## Producao Firebase App Hosting
 
-Depois do deploy, trocar `SEU-PROJETO` pela URL real:
+URLs configuradas:
 
 ```text
-https://SEU-PROJETO.web.app
-https://SEU-PROJETO.web.app/api/auth/callback/google
+https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app
+https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app/api/auth/callback/google
 ```
+
+Dominio autorizado no Firebase Auth:
+
+```text
+smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app
+```
+
+O frontend usa Firebase Auth com `signInWithPopup`. As rotas `/api/auth/google` e `/api/auth/callback/google` ficam mantidas para o fluxo OAuth server-side e verificacoes tecnicas.
 
 ## Escopos iniciais
 
@@ -40,3 +48,13 @@ Usar o menor acesso possivel:
 - `https://www.googleapis.com/auth/drive.file`
 - `https://www.googleapis.com/auth/spreadsheets`
 - `https://www.googleapis.com/auth/calendar.events`
+
+## Usuario autorizado no app
+
+O frontend limita acesso por e-mail em `AUTHORIZED_EMAILS`, dentro de `src/tdah/App.tsx`.
+
+E-mail autorizado atualmente:
+
+```text
+braudock@gmail.com
+```
