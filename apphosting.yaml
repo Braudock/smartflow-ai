@@ -17,3 +17,19 @@ env:
     value: openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar.events
     availability:
       - RUNTIME
+  - variable: GEMINI_API_KEY
+    secret: gemini-api-key
+    availability:
+      - RUNTIME
+  - variable: GOOGLE_CLIENT_ID
+    secret: google-client-id
+    availability:
+      - RUNTIME
+  - variable: GOOGLE_CLIENT_SECRET
+    secret: google-client-secret
+    availability:
+      - RUNTIME
+  - variable: AUTH_SECRET
+    secret: auth-secret
+    availability:
+      - RUNTIME

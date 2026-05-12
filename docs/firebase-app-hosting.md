@@ -34,7 +34,7 @@ firebase deploy --only apphosting:smartflow-ai
 
 ## Secrets
 
-Crie estes secrets antes de ativar OAuth/Gemini em producao. Enquanto eles nao existirem, o app publica e a tela inicial mostra as variaveis como pendentes.
+Secrets configurados para producao:
 
 ```text
 gemini-api-key
@@ -43,17 +43,17 @@ google-client-secret
 auth-secret
 ```
 
-Depois de criar os secrets, adicione novamente as variaveis secretas ao `apphosting.yaml` ou configure-as no painel do App Hosting.
+O backend `smartflow-ai` tem permissao de leitura nesses secrets.
 
 ## Variaveis
 
 ```text
-AUTH_URL=https://SEU-PROJETO.web.app
+AUTH_URL=https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app
 GOOGLE_OAUTH_SCOPES=openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar.events
 ```
 
 ## Callback OAuth
 
 ```text
-https://SEU-PROJETO.web.app/api/auth/callback/google
+https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app/api/auth/callback/google
 ```

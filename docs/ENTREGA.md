@@ -46,10 +46,13 @@ firebase deploy --only apphosting:smartflow-ai
 - Firebase App Hosting configurado.
 - Deploy publicado e validado com HTTP 200.
 - `/api/health` publicado e respondendo.
+- Secrets de Gemini e OAuth configurados no Secret Manager.
+- Gemini validado em `/api/gemini/test`.
+- Inicio do login Google validado com redirecionamento OAuth.
 
-## Pendencias para ativar Gemini/OAuth
+## Gemini/OAuth
 
-Configure estes secrets reais no Firebase App Hosting ou Secret Manager:
+Secrets configurados no Firebase App Hosting:
 
 ```text
 GEMINI_API_KEY
@@ -58,8 +61,10 @@ GOOGLE_CLIENT_SECRET
 AUTH_SECRET
 ```
 
-Depois disso, adicione a URL de callback no Google OAuth:
+URL de callback adicionada no OAuth Google:
 
 ```text
 https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app/api/auth/callback/google
 ```
+
+Observacao: a tela de consentimento OAuth pode limitar logins enquanto o app estiver em modo de teste ou sem verificacao do Google.
