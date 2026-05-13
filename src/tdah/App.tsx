@@ -93,12 +93,14 @@ export default function App() {
   const [selectedAlertId, setSelectedAlertId] = useState('default');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusedRecordId, setFocusedRecordId] = useState<string | null>(null);
+  const [dueAlertRecordId, setDueAlertRecordId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const keepRecordingRef = useRef(false);
   const finalTranscriptRef = useRef('');
   const restartTimeoutRef = useRef<number | null>(null);
   const scheduledNotifications = useRef<Set<string>>(new Set());
+  const strongAlertedRecords = useRef<Set<string>>(new Set());
   const alertSound = useRef<HTMLAudioElement | null>(null);
 
   // Stats Logic: Fetch latest 7 days and streak
@@ -199,31 +201,61 @@ export default function App() {
     }
   };
 
-  // Schedule Notifications for upcoming events
-  useEffect(() => {
-    if (!notificationsEnabled || records.length === 0) return;
+  const playAlertSignal = (strong = false) => {
+    const sound = alertSound.current;
+    if (sound) {
+      sound.currentTime = 0;
+      sound.play().catch(() => {});
+    }
 
-    const interval = setInterval(() => {
+    if ("vibrate" in navigator) {
+      navigator.vibrate(strong ? [500, 150, 500, 150, 900] : [200, 100, 200]);
+    }
+  };
+
+  const sendSystemNotification = (title: string, body: string) => {
+    if (!notificationsEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+
+    new Notification(title, {
+      body,
+      icon: '/favicon.ico',
+      requireInteraction: true
+    });
+  };
+
+  // Schedule upcoming notifications and strong due-time alerts.
+  useEffect(() => {
+    if (records.length === 0) return;
+
+    const checkAlerts = () => {
       const now = new Date().getTime();
       records.forEach(record => {
-        if (!record.dataHoraDetectada || record.status === BrainStatus.COMPLETED || scheduledNotifications.current.has(record.id)) return;
+        if (!record.dataHoraDetectada || record.status === BrainStatus.COMPLETED) return;
 
         const eventTime = new Date(record.dataHoraDetectada).getTime();
+        if (Number.isNaN(eventTime)) return;
+
         const diff = eventTime - now;
 
-        // Alert if event is in the next 10 minutes and hasn't passed
-        if (diff > 0 && diff < 10 * 60 * 1000) {
-          new Notification(`Lembrete: ${record.tipo}`, {
-            body: record.conteudo,
-            icon: '/favicon.ico',
-          });
-          alertSound.current?.play().catch(() => {}); // Play sound if user interacted
+        if (diff > 0 && diff <= 10 * 60 * 1000 && !scheduledNotifications.current.has(record.id)) {
+          sendSystemNotification(`Lembrete em breve: ${record.tipo}`, record.conteudo);
+          playAlertSignal(false);
           scheduledNotifications.current.add(record.id);
         }
-      });
-    }, 30000); // Check every 30 seconds
 
-    return () => clearInterval(interval);
+        if (diff <= 0 && diff >= -60 * 60 * 1000 && !strongAlertedRecords.current.has(record.id)) {
+          strongAlertedRecords.current.add(record.id);
+          setDueAlertRecordId(record.id);
+          sendSystemNotification(`AGORA: ${record.tipo}`, record.conteudo);
+          playAlertSignal(true);
+        }
+      });
+    };
+
+    checkAlerts();
+    const interval = window.setInterval(checkAlerts, 15000);
+
+    return () => window.clearInterval(interval);
   }, [records, notificationsEnabled]);
 
   // Online/Offline Status Observer
@@ -590,6 +622,26 @@ export default function App() {
     return Math.round((completed / todayRecords.length) * 100);
   }, [todayRecords]);
 
+  const dueAlertRecord = useMemo(() => {
+    if (!dueAlertRecordId) return null;
+    return records.find(r => r.id === dueAlertRecordId && r.status !== BrainStatus.COMPLETED) || null;
+  }, [records, dueAlertRecordId]);
+
+  useEffect(() => {
+    if (dueAlertRecordId && !dueAlertRecord) {
+      setDueAlertRecordId(null);
+    }
+  }, [dueAlertRecord, dueAlertRecordId]);
+
+  useEffect(() => {
+    if (!dueAlertRecord) return;
+
+    playAlertSignal(true);
+    const interval = window.setInterval(() => playAlertSignal(true), 12000);
+
+    return () => window.clearInterval(interval);
+  }, [dueAlertRecord?.id]);
+
   const encourageMessage = useMemo(() => {
     if (progress === 0) return "Vamos começar com algo pequeno?";
     if (progress < 50) return "Você está no caminho certo! Continue.";
@@ -889,6 +941,118 @@ export default function App() {
         )}
       </main>
       {activeTab !== 'capture' && <button onClick={() => setActiveTab('capture')} className="fixed bottom-6 right-5 md:bottom-8 md:right-8 w-14 h-14 bg-orange-500 text-white rounded-2xl shadow-xl shadow-orange-500/20 flex items-center justify-center hover:scale-105 transition-all"><Plus size={28} /></button>}
+
+      <AnimatePresence>
+        {dueAlertRecord && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              className="relative w-full max-w-md overflow-hidden rounded-[2.25rem] bg-white shadow-2xl"
+            >
+              <div className="bg-red-600 px-6 py-5 text-white">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 animate-pulse">
+                      <AlertCircle size={28} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/80">Alerta forte</p>
+                      <h2 className="text-2xl font-black uppercase leading-none">É agora</h2>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDueAlertRecordId(null)}
+                    className="rounded-xl p-2 text-white/70 hover:bg-white/10 hover:text-white"
+                    title="Fechar alerta"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-5 p-6">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase ${getTypeColor(dueAlertRecord.tipo)}`}>
+                      {dueAlertRecord.tipo}
+                    </span>
+                    <span className="flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-[10px] font-black uppercase text-red-600">
+                      <Clock size={12} />
+                      {dueAlertRecord.dataHoraDetectada
+                        ? new Date(dueAlertRecord.dataHoraDetectada).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                        : 'Agora'}
+                    </span>
+                  </div>
+                  <p className="text-2xl font-black leading-tight text-slate-900">{dueAlertRecord.conteudo}</p>
+                </div>
+
+                {dueAlertRecord.local && (
+                  <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-700">
+                    <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase">
+                      <MapPin size={14} />
+                      <span className="truncate">{dueAlertRecord.local}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <a
+                        href={dueAlertRecord.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dueAlertRecord.local)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-xl bg-white px-3 py-2 text-center text-[10px] font-black uppercase shadow-sm"
+                      >
+                        Maps
+                      </a>
+                      <a
+                        href={dueAlertRecord.wazeUrl || `https://waze.com/ul?q=${encodeURIComponent(dueAlertRecord.local)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-xl bg-white px-3 py-2 text-center text-[10px] font-black uppercase text-blue-600 shadow-sm"
+                      >
+                        Waze
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setFocusedRecordId(dueAlertRecord.id);
+                      setDueAlertRecordId(null);
+                    }}
+                    className="rounded-2xl bg-slate-900 px-4 py-4 text-xs font-black uppercase tracking-wide text-white active:scale-95"
+                  >
+                    Focar agora
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await updateRecord(dueAlertRecord.id, { status: BrainStatus.COMPLETED });
+                      setDueAlertRecordId(null);
+                    }}
+                    className="rounded-2xl bg-orange-500 px-4 py-4 text-xs font-black uppercase tracking-wide text-white active:scale-95"
+                  >
+                    Marcar feito
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setDueAlertRecordId(null)}
+                  className="w-full rounded-2xl bg-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 active:scale-95"
+                >
+                  Entendi
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {focusedRecordId && (

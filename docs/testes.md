@@ -84,3 +84,16 @@ Checklist manual no Chrome mobile:
 - Falar por mais tempo, incluindo pausas curtas.
 - Confirmar que o texto continua acumulando.
 - Tocar no microfone novamente para parar.
+
+## Alerta forte de compromisso
+
+Checklist manual no Chrome mobile:
+
+- Criar uma captura com compromisso para 1 ou 2 minutos no futuro.
+- Manter o app aberto.
+- Confirmar que aparece um aviso previo antes do horario.
+- Confirmar que, no horario, abre uma tela vermelha `Alerta forte`.
+- Confirmar som repetido e vibracao.
+- Testar os botoes `Entendi`, `Focar agora` e `Marcar feito`.
+
+Limite importante: sem push notification/service worker dedicado, navegadores moveis podem suspender JavaScript se o app estiver fechado, em segundo plano profundo ou com economia de bateria agressiva. O alerta forte atual e confiavel com o app aberto/ativo.

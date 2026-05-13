@@ -58,6 +58,7 @@ firebase deploy --only firestore,apphosting:smartflow-ai
 - Cards com local agora exibem botoes `Maps` e `Waze`.
 - Botao flutuante `+` abre a aba Captura.
 - Microfone mantem a escuta ativa e reinicia automaticamente quando o navegador encerra uma sessao de fala.
+- Compromissos no horario disparam alerta forte com tela vermelha, som repetido e vibracao no celular.
 - Commit da correcao mobile: `12d6c7d Improve mobile layout and map actions`.
 
 ## Frontend publicado
@@ -81,6 +82,7 @@ Cards menos apertados.
 Texto quebra linha dentro do card.
 Maps e Waze aparecem como botoes clicaveis.
 Microfone continua captando ate o usuario tocar novamente para parar.
+Alerta forte aparece no horario do compromisso enquanto o app estiver aberto/ativo.
 ```
 
 ## Gemini/OAuth

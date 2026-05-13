@@ -12,6 +12,8 @@
 - Gemini funcionando via Vertex AI em `/api/gemini/process`.
 - Cards com botoes Google Maps e Waze.
 - Layout mobile ajustado para nao ficar apertado.
+- Microfone mantem captura ate o usuario parar.
+- Alerta forte para compromissos no horario com som, vibracao e tela de urgencia.
 
 ## Depois
 
@@ -21,4 +23,5 @@
 - Implementar acoes Drive.
 - Implementar logs em Google Sheets.
 - Expandir integracao Calendar.
+- Avaliar push notification com service worker para alertas mesmo com o app fechado.
 - Avaliar Supabase para historico profissional.
