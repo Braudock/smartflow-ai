@@ -97,6 +97,7 @@ export default function App() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const keepRecordingRef = useRef(false);
+  const speechBaseTranscriptRef = useRef('');
   const finalTranscriptRef = useRef('');
   const restartTimeoutRef = useRef<number | null>(null);
   const scheduledNotifications = useRef<Set<string>>(new Set());
@@ -310,6 +311,32 @@ export default function App() {
 
   // Speech Recognition Init
   useEffect(() => {
+    const normalizeSpeechText = (value: string) => value.replace(/\s+/g, ' ').trim();
+
+    const joinWithoutDuplicate = (base: string, addition: string) => {
+      const cleanBase = normalizeSpeechText(base);
+      const cleanAddition = normalizeSpeechText(addition);
+
+      if (!cleanBase) return cleanAddition;
+      if (!cleanAddition) return cleanBase;
+      if (cleanBase.toLowerCase().endsWith(cleanAddition.toLowerCase())) return cleanBase;
+
+      const baseWords = cleanBase.split(' ');
+      const additionWords = cleanAddition.split(' ');
+      const maxOverlap = Math.min(baseWords.length, additionWords.length);
+
+      for (let size = maxOverlap; size > 0; size--) {
+        const baseTail = baseWords.slice(-size).join(' ').toLowerCase();
+        const additionHead = additionWords.slice(0, size).join(' ').toLowerCase();
+
+        if (baseTail === additionHead) {
+          return `${cleanBase} ${additionWords.slice(size).join(' ')}`.trim();
+        }
+      }
+
+      return `${cleanBase} ${cleanAddition}`.trim();
+    };
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
@@ -317,21 +344,40 @@ export default function App() {
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'pt-BR';
       recognitionRef.current.onresult = (event: any) => {
+        const finalParts: string[] = [];
         let interimTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+
+        for (let i = 0; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscriptRef.current = `${finalTranscriptRef.current}${transcript} `.replace(/\s+/g, ' ');
+            finalParts.push(transcript);
           } else {
-            interimTranscript += transcript;
+            interimTranscript = `${interimTranscript} ${transcript}`;
           }
         }
-        setInput(`${finalTranscriptRef.current}${interimTranscript}`.trimStart());
+
+        finalTranscriptRef.current = finalParts.reduce(
+          (current, part) => joinWithoutDuplicate(current, part),
+          ''
+        );
+
+        const committedText = joinWithoutDuplicate(
+          speechBaseTranscriptRef.current,
+          finalTranscriptRef.current
+        );
+        const visibleText = joinWithoutDuplicate(committedText, interimTranscript);
+
+        setInput(visibleText);
       };
       recognitionRef.current.onend = () => {
         if (keepRecordingRef.current) {
           restartTimeoutRef.current = window.setTimeout(() => {
             try {
+              speechBaseTranscriptRef.current = joinWithoutDuplicate(
+                speechBaseTranscriptRef.current,
+                finalTranscriptRef.current
+              );
+              finalTranscriptRef.current = '';
               recognitionRef.current?.start();
               setIsRecording(true);
             } catch {
@@ -388,7 +434,8 @@ export default function App() {
       setIsRecording(false);
     } else {
       keepRecordingRef.current = true;
-      finalTranscriptRef.current = input.trim() ? `${input.trim()} ` : '';
+      speechBaseTranscriptRef.current = input.trim();
+      finalTranscriptRef.current = '';
       try {
         recognitionRef.current.start();
         setIsRecording(true);

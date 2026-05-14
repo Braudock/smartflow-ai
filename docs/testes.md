@@ -83,6 +83,7 @@ Checklist manual no Chrome mobile:
 - Tocar no botao de microfone.
 - Falar por mais tempo, incluindo pausas curtas.
 - Confirmar que o texto continua acumulando.
+- Confirmar que as palavras/frases nao aparecem duplicadas depois de pausas.
 - Tocar no microfone novamente para parar.
 
 ## Alerta forte de compromisso
