@@ -61,6 +61,7 @@ firebase deploy --only firestore,apphosting:smartflow-ai
 - Transcricao do microfone deduplica trechos repetidos enviados pelo navegador.
 - Microfone para limpo quando a aba fica oculta, evitando travamento do Chrome mobile.
 - Compromissos no horario disparam alerta forte com tela vermelha, som repetido e vibracao no celular.
+- Salvamento ficou tolerante a falha da IA/Calendar e mostra erro de sincronizacao quando Firestore falha.
 - Commit da correcao mobile: `12d6c7d Improve mobile layout and map actions`.
 
 ## Frontend publicado
@@ -133,4 +134,5 @@ Deploy Firebase App Hosting: passou
 GET /: 200
 POST /api/gemini/process: ok com mapsUrl e wazeUrl
 POST /api/gemini/test: ok
+Botao Salvar: registra primeiro no Firestore e cria Calendar em segundo plano.
 ```

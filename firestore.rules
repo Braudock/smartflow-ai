@@ -19,6 +19,7 @@ service cloud.firestore {
              data.prioridade in ['ALTA', 'MEDIA', 'BAIXA'] &&
              data.conteudo is string && data.conteudo.size() <= 10000 &&
              data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
              (data.get('dataHoraDetectada', null) == null || data.dataHoraDetectada is string) &&
              (data.get('local', null) == null || data.local is string) &&
              (data.get('mapsUrl', null) == null || data.mapsUrl is string) &&
@@ -35,13 +36,11 @@ service cloud.firestore {
         
         allow create: if isOwner(userId) && 
                          isValidId(recordId) && 
-                         isValidRecord(incoming()) &&
-                         incoming().createdAt == request.time;
+                         isValidRecord(incoming());
                          
         allow update: if isOwner(userId) && 
                          isValidRecord(incoming()) &&
                          incoming().createdAt == existing().createdAt &&
-                         incoming().updatedAt == request.time &&
                          incoming().diff(existing()).affectedKeys().hasOnly([
                            'tipo', 'prioridade', 'conteudo', 'insight', 'tags', 
                            'dataHoraDetectada', 'local', 'mapsUrl', 'wazeUrl', 'updatedAt', 'status'

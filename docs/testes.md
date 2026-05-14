@@ -75,6 +75,18 @@ Checklist visual no celular:
 - Card com local deve mostrar botoes `Maps` e `Waze`.
 - Texto do card deve quebrar linha sem sair da area branca.
 
+## Salvamento
+
+Checklist manual:
+
+- Entrar com a conta autorizada.
+- Abrir Captura.
+- Digitar um compromisso com horario e local.
+- Tocar `SALVAR`.
+- Confirmar que o app muda para Historico e o item aparece.
+- Se o Calendar falhar, o registro ainda deve ficar salvo.
+- Se Firestore falhar, o app deve mostrar mensagem de erro na aba Captura.
+
 ## Microfone
 
 Checklist manual no Chrome mobile:

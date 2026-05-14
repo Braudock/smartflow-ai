@@ -116,6 +116,8 @@ export default function App() {
       const data = snap.docs.map(d => d.data());
       setStats(data.reverse());
       if (data.length > 0) setStreak(data[0].streak || 0);
+    }, (error) => {
+      console.error("Stats sync error", error);
     });
   }, [user]);
 
@@ -303,8 +305,10 @@ export default function App() {
         hasPendingWrites: d.metadata.hasPendingWrites
       } as BrainEntry));
       setRecords(docs);
+      setError(null);
     }, (error) => {
       console.error("Firestore sync error", error);
+      setError(`Erro ao sincronizar registros: ${error.message || String(error)}`);
     });
 
     return () => unsubscribe();
@@ -544,7 +548,22 @@ export default function App() {
     try {
       let data;
       if (isOnline) {
-        data = await processInput(input);
+        try {
+          data = await processInput(input);
+        } catch (aiError) {
+          console.error("Gemini processing failed, saving raw capture", aiError);
+          data = {
+            tipo: BrainType.TAREFA,
+            prioridade: BrainPriority.MEDIA,
+            conteudo: input,
+            insight: 'Salvo sem processamento da IA. Edite depois se quiser ajustar os detalhes.',
+            tags: ['manual'],
+            dataHoraDetectada: null,
+            local: null,
+            mapsUrl: null,
+            wazeUrl: null
+          };
+        }
       } else {
         // Fallback for offline mode
         data = {
@@ -560,9 +579,11 @@ export default function App() {
         };
       }
 
+      const now = new Date();
+      const firestoreNow = Timestamp.fromDate(now);
       const newDoc = {
         userId: user.uid,
-        timestamp: new Date().toLocaleString('pt-BR'),
+        timestamp: now.toLocaleString('pt-BR'),
         tipo: data.tipo as BrainType,
         prioridade: data.prioridade || BrainPriority.MEDIA,
         conteudo: data.conteudo || input,
@@ -573,14 +594,20 @@ export default function App() {
         mapsUrl: data.mapsUrl || null,
         wazeUrl: data.wazeUrl || null,
         status: BrainStatus.PENDING,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: firestoreNow,
+        updatedAt: firestoreNow,
       };
 
-      await addDoc(collection(db, path), newDoc);
+      const docRef = await addDoc(collection(db, path), newDoc);
+      setRecords(prev => [
+        { id: docRef.id, ...newDoc, hasPendingWrites: true } as BrainEntry,
+        ...prev.filter(record => record.id !== docRef.id)
+      ]);
       
       if (newDoc.dataHoraDetectada && googleToken && isOnline) {
-        await createCalendarEvent(newDoc);
+        createCalendarEvent(newDoc).catch((calendarError) => {
+          console.error("Calendar event was not created, but the record was saved", calendarError);
+        });
       }
 
       setError(null);
@@ -588,7 +615,8 @@ export default function App() {
       setActiveTab('history');
     } catch (err: any) {
       console.error("Capture failed:", err);
-      setError(err.message || String(err));
+      setError(`Nao consegui salvar. ${err.message || String(err)}`);
+      setActiveTab('capture');
       // handleFirestoreError(err, OperationType.CREATE, path); // removed for now to allow UI feedback
     } finally {
       setLoading(false);
