@@ -59,6 +59,7 @@ firebase deploy --only firestore,apphosting:smartflow-ai
 - Botao flutuante `+` abre a aba Captura.
 - Microfone mantem a escuta ativa e reinicia automaticamente quando o navegador encerra uma sessao de fala.
 - Transcricao do microfone deduplica trechos repetidos enviados pelo navegador.
+- Microfone para limpo quando a aba fica oculta, evitando travamento do Chrome mobile.
 - Compromissos no horario disparam alerta forte com tela vermelha, som repetido e vibracao no celular.
 - Commit da correcao mobile: `12d6c7d Improve mobile layout and map actions`.
 

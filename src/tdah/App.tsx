@@ -100,6 +100,7 @@ export default function App() {
   const speechBaseTranscriptRef = useRef('');
   const finalTranscriptRef = useRef('');
   const restartTimeoutRef = useRef<number | null>(null);
+  const speechRestartCountRef = useRef(0);
   const scheduledNotifications = useRef<Set<string>>(new Set());
   const strongAlertedRecords = useRef<Set<string>>(new Set());
   const alertSound = useRef<HTMLAudioElement | null>(null);
@@ -369,8 +370,31 @@ export default function App() {
 
         setInput(visibleText);
       };
+      const stopSpeechCleanly = () => {
+        keepRecordingRef.current = false;
+        if (restartTimeoutRef.current) {
+          window.clearTimeout(restartTimeoutRef.current);
+          restartTimeoutRef.current = null;
+        }
+        speechBaseTranscriptRef.current = joinWithoutDuplicate(
+          speechBaseTranscriptRef.current,
+          finalTranscriptRef.current
+        );
+        finalTranscriptRef.current = '';
+        recognitionRef.current?.abort?.();
+        setIsRecording(false);
+      };
+
       recognitionRef.current.onend = () => {
         if (keepRecordingRef.current) {
+          if (document.visibilityState !== 'visible') {
+            stopSpeechCleanly();
+            return;
+          }
+
+          speechRestartCountRef.current += 1;
+          const restartDelay = Math.min(900 + speechRestartCountRef.current * 250, 2500);
+
           restartTimeoutRef.current = window.setTimeout(() => {
             try {
               speechBaseTranscriptRef.current = joinWithoutDuplicate(
@@ -383,7 +407,7 @@ export default function App() {
             } catch {
               // Chrome can throw if it is still closing the previous session.
             }
-          }, 250);
+          }, restartDelay);
           return;
         }
 
@@ -395,6 +419,21 @@ export default function App() {
           keepRecordingRef.current = false;
           setIsRecording(false);
         }
+      };
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState !== 'visible' && keepRecordingRef.current) {
+          stopSpeechCleanly();
+        }
+      };
+
+      window.addEventListener('pagehide', stopSpeechCleanly);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      return () => {
+        window.removeEventListener('pagehide', stopSpeechCleanly);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        stopSpeechCleanly();
       };
     }
 
@@ -434,6 +473,7 @@ export default function App() {
       setIsRecording(false);
     } else {
       keepRecordingRef.current = true;
+      speechRestartCountRef.current = 0;
       speechBaseTranscriptRef.current = input.trim();
       finalTranscriptRef.current = '';
       try {
