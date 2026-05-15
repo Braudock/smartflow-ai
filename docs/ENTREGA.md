@@ -65,6 +65,7 @@ firebase deploy --only firestore,apphosting:smartflow-ai
 - Alertas fortes agora ocupam a tela inteira, piscam o titulo da aba, repetem som/vibracao e destacam Maps/Waze quando houver local.
 - Salvamento ficou tolerante a falha da IA/Calendar e mostra erro de sincronizacao quando Firestore falha.
 - Commit da correcao mobile: `12d6c7d Improve mobile layout and map actions`.
+- Commit do alerta forte e horario local: `fe8145e Strengthen alerts and preserve spoken times`.
 
 ## Frontend publicado
 
