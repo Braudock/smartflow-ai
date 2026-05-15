@@ -55,6 +55,9 @@ Funcionalidades publicadas:
 - Botao flutuante `+` abrindo a aba Captura.
 - Cards mobile ajustados para nao ficarem espremidos.
 - Acoes de local com botoes `Maps` e `Waze`.
+- Alertas em camadas para compromissos: preparo, saida sugerida, falta pouco, horario exato e atraso.
+- Alertas fortes em tela cheia com som repetido, vibracao, titulo piscando, botoes de rota e opcoes de adiar.
+- Horarios falados sao preservados no fuso local do navegador ao voltar do Gemini.
 
 ## Deploy no Firebase App Hosting
 

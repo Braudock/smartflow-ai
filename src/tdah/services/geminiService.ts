@@ -43,12 +43,13 @@ export async function processInput(text: string): Promise<Partial<BrainEntry>> {
     throw new Error("Input text is empty");
   }
 
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Sao_Paulo";
   const response = await fetch("/api/gemini/process", {
     method: "POST",
     headers: {
       "content-type": "application/json"
     },
-    body: JSON.stringify({ text })
+    body: JSON.stringify({ text, timeZone })
   });
 
   const payload = (await response.json().catch(() => ({}))) as {

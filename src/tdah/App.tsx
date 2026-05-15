@@ -68,6 +68,52 @@ const ALERTS = [
   { id: 'echo', label: 'Eco', url: 'https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3' },
 ];
 
+type AlertStage = 'prepare' | 'leave' | 'soon' | 'now' | 'overdue';
+
+const ALERT_STAGE_COPY: Record<AlertStage, {
+  eyebrow: string;
+  title: string;
+  description: string;
+  color: string;
+  tone: string;
+}> = {
+  prepare: {
+    eyebrow: 'Prepare-se',
+    title: 'Compromisso chegando',
+    description: 'Separe o que precisa levar e confirme os detalhes agora.',
+    color: 'from-blue-600 to-cyan-500',
+    tone: 'text-blue-700'
+  },
+  leave: {
+    eyebrow: 'Saída sugerida',
+    title: 'Abra a rota agora',
+    description: 'Você tem um destino. Veja o caminho antes de sair.',
+    color: 'from-orange-600 to-amber-500',
+    tone: 'text-orange-700'
+  },
+  soon: {
+    eyebrow: 'Falta pouco',
+    title: 'Atenção total',
+    description: 'O horário está muito perto. Pare o que estiver fazendo e se organize.',
+    color: 'from-rose-600 to-orange-500',
+    tone: 'text-rose-700'
+  },
+  now: {
+    eyebrow: 'Alerta máximo',
+    title: 'É agora',
+    description: 'Esse compromisso precisa da sua atenção neste momento.',
+    color: 'from-red-700 to-orange-600',
+    tone: 'text-red-700'
+  },
+  overdue: {
+    eyebrow: 'Atrasado',
+    title: 'Ainda precisa agir',
+    description: 'O horário passou. Escolha uma ação agora para não perder o fio.',
+    color: 'from-red-800 to-red-600',
+    tone: 'text-red-800'
+  }
+};
+
 const AUTHORIZED_EMAILS = [
   'braudock@gmail.com', // Seu e-mail
   'braudock@gmail.com', // Adicione novos e-emails aqui.
@@ -94,6 +140,8 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusedRecordId, setFocusedRecordId] = useState<string | null>(null);
   const [dueAlertRecordId, setDueAlertRecordId] = useState<string | null>(null);
+  const [activeAlertStage, setActiveAlertStage] = useState<AlertStage | null>(null);
+  const [alertClock, setAlertClock] = useState(() => Date.now());
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const keepRecordingRef = useRef(false);
@@ -101,8 +149,8 @@ export default function App() {
   const finalTranscriptRef = useRef('');
   const restartTimeoutRef = useRef<number | null>(null);
   const speechRestartCountRef = useRef(0);
-  const scheduledNotifications = useRef<Set<string>>(new Set());
-  const strongAlertedRecords = useRef<Set<string>>(new Set());
+  const announcedAlertStages = useRef<Set<string>>(new Set());
+  const snoozedAlertsUntil = useRef<Map<string, number>>(new Map());
   const alertSound = useRef<HTMLAudioElement | null>(null);
 
   // Stats Logic: Fetch latest 7 days and streak
@@ -227,7 +275,7 @@ export default function App() {
     });
   };
 
-  // Schedule upcoming notifications and strong due-time alerts.
+  // Schedule layered notifications and in-app interruption alerts.
   useEffect(() => {
     if (records.length === 0) return;
 
@@ -240,18 +288,42 @@ export default function App() {
         if (Number.isNaN(eventTime)) return;
 
         const diff = eventTime - now;
+        const maybeAnnounce = (stage: AlertStage, title: string, strong = false) => {
+          const key = `${record.id}:${stage}`;
+          if (announcedAlertStages.current.has(key)) return;
 
-        if (diff > 0 && diff <= 10 * 60 * 1000 && !scheduledNotifications.current.has(record.id)) {
-          sendSystemNotification(`Lembrete em breve: ${record.tipo}`, record.conteudo);
-          playAlertSignal(false);
-          scheduledNotifications.current.add(record.id);
+          announcedAlertStages.current.add(key);
+          sendSystemNotification(title, record.conteudo);
+          playAlertSignal(strong);
+        };
+
+        if (record.local && diff > 60 * 60 * 1000 && diff <= 2 * 60 * 60 * 1000) {
+          maybeAnnounce('prepare', `Prepare-se: ${record.tipo}`);
         }
 
-        if (diff <= 0 && diff >= -60 * 60 * 1000 && !strongAlertedRecords.current.has(record.id)) {
-          strongAlertedRecords.current.add(record.id);
-          setDueAlertRecordId(record.id);
-          sendSystemNotification(`AGORA: ${record.tipo}`, record.conteudo);
-          playAlertSignal(true);
+        if (record.local && diff > 10 * 60 * 1000 && diff <= 30 * 60 * 1000) {
+          maybeAnnounce('leave', `Veja a rota: ${record.tipo}`, true);
+          if (!snoozedAlertsUntil.current.get(record.id) || snoozedAlertsUntil.current.get(record.id)! <= now) {
+            setDueAlertRecordId(record.id);
+            setActiveAlertStage('leave');
+          }
+        }
+
+        if (diff > 0 && diff <= 10 * 60 * 1000) {
+          maybeAnnounce('soon', `Lembrete em breve: ${record.tipo}`, true);
+          if (!snoozedAlertsUntil.current.get(record.id) || snoozedAlertsUntil.current.get(record.id)! <= now) {
+            setDueAlertRecordId(record.id);
+            setActiveAlertStage('soon');
+          }
+        }
+
+        if (diff <= 0 && diff >= -60 * 60 * 1000) {
+          const stage: AlertStage = diff >= -5 * 60 * 1000 ? 'now' : 'overdue';
+          maybeAnnounce(stage, stage === 'now' ? `AGORA: ${record.tipo}` : `ATRASADO: ${record.tipo}`, true);
+          if (!snoozedAlertsUntil.current.get(record.id) || snoozedAlertsUntil.current.get(record.id)! <= now) {
+            setDueAlertRecordId(record.id);
+            setActiveAlertStage(stage);
+          }
         }
       });
     };
@@ -742,20 +814,50 @@ export default function App() {
     return records.find(r => r.id === dueAlertRecordId && r.status !== BrainStatus.COMPLETED) || null;
   }, [records, dueAlertRecordId]);
 
+  const alertCopy = activeAlertStage ? ALERT_STAGE_COPY[activeAlertStage] : ALERT_STAGE_COPY.now;
+
+  const dueAlertTiming = useMemo(() => {
+    if (!dueAlertRecord?.dataHoraDetectada) return null;
+
+    const dueAt = new Date(dueAlertRecord.dataHoraDetectada).getTime();
+    if (Number.isNaN(dueAt)) return null;
+
+    const minutes = Math.round((dueAt - alertClock) / 60000);
+    if (minutes > 1) return `faltam ${minutes} min`;
+    if (minutes === 1) return 'falta 1 min';
+    if (minutes === 0) return 'agora';
+    if (minutes === -1) return 'atrasado 1 min';
+    return `atrasado ${Math.abs(minutes)} min`;
+  }, [alertClock, dueAlertRecord?.dataHoraDetectada]);
+
   useEffect(() => {
     if (dueAlertRecordId && !dueAlertRecord) {
       setDueAlertRecordId(null);
+      setActiveAlertStage(null);
     }
   }, [dueAlertRecord, dueAlertRecordId]);
 
   useEffect(() => {
     if (!dueAlertRecord) return;
 
+    setAlertClock(Date.now());
     playAlertSignal(true);
-    const interval = window.setInterval(() => playAlertSignal(true), 12000);
+    const interval = window.setInterval(() => playAlertSignal(true), 8000);
+    const previousTitle = document.title;
+    let titleFlip = false;
+    const titleInterval = window.setInterval(() => {
+      titleFlip = !titleFlip;
+      document.title = titleFlip ? `ALERTA: ${alertCopy.title}` : previousTitle;
+    }, 900);
+    const clockInterval = window.setInterval(() => setAlertClock(Date.now()), 15000);
 
-    return () => window.clearInterval(interval);
-  }, [dueAlertRecord?.id]);
+    return () => {
+      window.clearInterval(interval);
+      window.clearInterval(titleInterval);
+      window.clearInterval(clockInterval);
+      document.title = previousTitle;
+    };
+  }, [alertCopy.title, dueAlertRecord?.id]);
 
   const encourageMessage = useMemo(() => {
     if (progress === 0) return "Vamos começar com algo pequeno?";
@@ -1059,42 +1161,60 @@ export default function App() {
 
       <AnimatePresence>
         {dueAlertRecord && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 md:p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-950/70 backdrop-blur-md"
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div
+              aria-hidden="true"
+              animate={{ opacity: [0.18, 0.42, 0.18], scale: [1, 1.06, 1] }}
+              transition={{ repeat: Infinity, duration: 1.4 }}
+              className={`absolute inset-0 bg-gradient-to-br ${alertCopy.color}`}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
-              className="relative w-full max-w-md overflow-hidden rounded-[2.25rem] bg-white shadow-2xl"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="due-alert-title"
+              aria-describedby="due-alert-description"
+              className="relative w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl"
             >
-              <div className="bg-red-600 px-6 py-5 text-white">
-                <div className="flex items-center justify-between gap-4">
+              <div className={`bg-gradient-to-br ${alertCopy.color} px-5 py-5 text-white md:px-6`}>
+                <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 animate-pulse">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 animate-pulse">
                       <AlertCircle size={28} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/80">Alerta forte</p>
-                      <h2 className="text-2xl font-black uppercase leading-none">É agora</h2>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/80">{alertCopy.eyebrow}</p>
+                      <h2 id="due-alert-title" className="text-2xl font-black leading-none">{alertCopy.title}</h2>
                     </div>
                   </div>
                   <button
-                    onClick={() => setDueAlertRecordId(null)}
+                    onClick={() => {
+                      snoozedAlertsUntil.current.set(dueAlertRecord.id, Date.now() + 10 * 60 * 1000);
+                      setDueAlertRecordId(null);
+                      setActiveAlertStage(null);
+                    }}
                     className="rounded-xl p-2 text-white/70 hover:bg-white/10 hover:text-white"
-                    title="Fechar alerta"
+                    title="Adiar por 10 minutos"
                   >
                     <X size={20} />
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-5 p-6">
-                <div className="space-y-2">
+              <div className="space-y-5 p-5 md:p-6">
+                <p id="due-alert-description" className={`text-sm font-bold leading-relaxed ${alertCopy.tone}`}>
+                  {alertCopy.description}
+                </p>
+
+                <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase ${getTypeColor(dueAlertRecord.tipo)}`}>
                       {dueAlertRecord.tipo}
@@ -1102,45 +1222,56 @@ export default function App() {
                     <span className="flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-[10px] font-black uppercase text-red-600">
                       <Clock size={12} />
                       {dueAlertRecord.dataHoraDetectada
-                        ? new Date(dueAlertRecord.dataHoraDetectada).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                        ? new Date(dueAlertRecord.dataHoraDetectada).toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
                         : 'Agora'}
                     </span>
+                    {dueAlertTiming && (
+                      <span className="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-black uppercase text-white">
+                        {dueAlertTiming}
+                      </span>
+                    )}
                   </div>
                   <p className="text-2xl font-black leading-tight text-slate-900">{dueAlertRecord.conteudo}</p>
                 </div>
 
                 {dueAlertRecord.local && (
-                  <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-700">
-                    <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase">
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-700">
+                    <div className="mb-3 flex items-start gap-2 text-[11px] font-black uppercase leading-snug">
                       <MapPin size={14} />
-                      <span className="truncate">{dueAlertRecord.local}</span>
+                      <span>{dueAlertRecord.local}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <a
                         href={dueAlertRecord.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dueAlertRecord.local)}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded-xl bg-white px-3 py-2 text-center text-[10px] font-black uppercase shadow-sm"
+                        className="rounded-xl bg-white px-3 py-3 text-center text-[11px] font-black uppercase shadow-sm"
                       >
-                        Maps
+                        Abrir Maps
                       </a>
                       <a
                         href={dueAlertRecord.wazeUrl || `https://waze.com/ul?q=${encodeURIComponent(dueAlertRecord.local)}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded-xl bg-white px-3 py-2 text-center text-[10px] font-black uppercase text-blue-600 shadow-sm"
+                        className="rounded-xl bg-white px-3 py-3 text-center text-[11px] font-black uppercase text-blue-600 shadow-sm"
                       >
-                        Waze
+                        Abrir Waze
                       </a>
                     </div>
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   <button
                     onClick={() => {
                       setFocusedRecordId(dueAlertRecord.id);
                       setDueAlertRecordId(null);
+                      setActiveAlertStage(null);
                     }}
                     className="rounded-2xl bg-slate-900 px-4 py-4 text-xs font-black uppercase tracking-wide text-white active:scale-95"
                   >
@@ -1150,6 +1281,7 @@ export default function App() {
                     onClick={async () => {
                       await updateRecord(dueAlertRecord.id, { status: BrainStatus.COMPLETED });
                       setDueAlertRecordId(null);
+                      setActiveAlertStage(null);
                     }}
                     className="rounded-2xl bg-orange-500 px-4 py-4 text-xs font-black uppercase tracking-wide text-white active:scale-95"
                   >
@@ -1157,12 +1289,28 @@ export default function App() {
                   </button>
                 </div>
 
-                <button
-                  onClick={() => setDueAlertRecordId(null)}
-                  className="w-full rounded-2xl bg-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 active:scale-95"
-                >
-                  Entendi
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      snoozedAlertsUntil.current.set(dueAlertRecord.id, Date.now() + 10 * 60 * 1000);
+                      setDueAlertRecordId(null);
+                      setActiveAlertStage(null);
+                    }}
+                    className="rounded-2xl bg-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-600 active:scale-95"
+                  >
+                    Adiar 10 min
+                  </button>
+                  <button
+                    onClick={() => {
+                      snoozedAlertsUntil.current.set(dueAlertRecord.id, Date.now() + 5 * 60 * 1000);
+                      setDueAlertRecordId(null);
+                      setActiveAlertStage(null);
+                    }}
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 active:scale-95"
+                  >
+                    Vi o alerta
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

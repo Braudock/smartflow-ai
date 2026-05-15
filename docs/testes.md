@@ -24,7 +24,7 @@ curl https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app/api
 ```bash
 curl -X POST http://localhost:3000/api/gemini/process ^
   -H "content-type: application/json" ^
-  -d "{\"text\":\"Ir para o armazem do MercadoLivre BRSP-04 as 23:00\"}"
+  -d "{\"text\":\"Ir para o armazem do MercadoLivre BRSP-04 as 23:00\",\"timeZone\":\"America/Sao_Paulo\"}"
 ```
 
 Producao:
@@ -32,7 +32,7 @@ Producao:
 ```bash
 curl -X POST https://smartflow-ai--gen-lang-client-0013019253.us-central1.hosted.app/api/gemini/process ^
   -H "content-type: application/json" ^
-  -d "{\"text\":\"Ir para o armazem do MercadoLivre BRSP-04 as 23:00\"}"
+  -d "{\"text\":\"Ir para o armazem do MercadoLivre BRSP-04 as 23:00\",\"timeZone\":\"America/Sao_Paulo\"}"
 ```
 
 A resposta deve conter:
@@ -42,6 +42,21 @@ ok=true
 data.local
 data.mapsUrl
 data.wazeUrl
+data.dataHoraDetectada com offset local explicito
+```
+
+Teste especifico de fuso:
+
+```bash
+curl -X POST http://localhost:3000/api/gemini/process ^
+  -H "content-type: application/json" ^
+  -d "{\"text\":\"Compromisso hoje as 20h50\",\"timeZone\":\"America/Sao_Paulo\"}"
+```
+
+O horario retornado deve manter `20:50` no fuso local, por exemplo:
+
+```text
+2026-05-15T20:50:00-03:00
 ```
 
 ## OAuth
@@ -103,11 +118,13 @@ Checklist manual no Chrome mobile:
 
 Checklist manual no Chrome mobile:
 
-- Criar uma captura com compromisso para 1 ou 2 minutos no futuro.
+- Criar uma captura com compromisso e local para 20 a 30 minutos no futuro.
 - Manter o app aberto.
-- Confirmar que aparece um aviso previo antes do horario.
-- Confirmar que, no horario, abre uma tela vermelha `Alerta forte`.
-- Confirmar som repetido e vibracao.
-- Testar os botoes `Entendi`, `Focar agora` e `Marcar feito`.
+- Confirmar aviso de `Saida sugerida` com botoes `Abrir Maps` e `Abrir Waze`.
+- Confirmar alerta `Falta pouco` nos 10 minutos finais.
+- Confirmar que, no horario, abre o alerta em tela cheia `Alerta maximo`.
+- Confirmar som repetido, vibracao e titulo da aba piscando.
+- Confirmar que apos o horario o estado muda para `Atrasado`.
+- Testar os botoes `Adiar 10 min`, `Vi o alerta`, `Focar agora` e `Marcar feito`.
 
 Limite importante: sem push notification/service worker dedicado, navegadores moveis podem suspender JavaScript se o app estiver fechado, em segundo plano profundo ou com economia de bateria agressiva. O alerta forte atual e confiavel com o app aberto/ativo.

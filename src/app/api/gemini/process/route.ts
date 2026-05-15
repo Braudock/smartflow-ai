@@ -8,6 +8,7 @@ const PROJECT_ID =
   "gen-lang-client-0013019253";
 const LOCATION = process.env.VERTEX_AI_LOCATION || "us-central1";
 const MODEL = "gemini-2.5-flash";
+const DEFAULT_TIME_ZONE = "America/Sao_Paulo";
 
 const responseSchema = {
   type: "OBJECT",
@@ -43,7 +44,90 @@ const responseSchema = {
   required: ["tipo", "prioridade", "conteudo", "insight", "tags"]
 };
 
-function buildInstruction() {
+function safeTimeZone(timeZone?: string) {
+  if (!timeZone) return DEFAULT_TIME_ZONE;
+
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone });
+    return timeZone;
+  } catch {
+    return DEFAULT_TIME_ZONE;
+  }
+}
+
+function formatPartsInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date);
+
+  return Object.fromEntries(parts.map((part) => [part.type, part.value])) as Record<string, string>;
+}
+
+function getOffsetMinutes(date: Date, timeZone: string) {
+  const parts = formatPartsInTimeZone(date, timeZone);
+  const zonedAsUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second)
+  );
+
+  return Math.round((zonedAsUtc - date.getTime()) / 60000);
+}
+
+function formatOffset(minutes: number) {
+  const sign = minutes >= 0 ? "+" : "-";
+  const absolute = Math.abs(minutes);
+  const hours = String(Math.floor(absolute / 60)).padStart(2, "0");
+  const remainder = String(absolute % 60).padStart(2, "0");
+
+  return `${sign}${hours}:${remainder}`;
+}
+
+function normalizeLocalDateTime(value: unknown, timeZone: string) {
+  if (typeof value !== "string" || !value.trim()) return value;
+
+  const trimmed = value.trim();
+  const match = trimmed.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$/
+  );
+
+  if (!match) return trimmed;
+
+  const [, year, month, day, hour, minute, second = "00"] = match;
+
+  // Treat every model timestamp as the local wall-clock time the user said, then attach the real zone offset.
+  const probe = new Date(Date.UTC(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second)
+  ));
+  const offset = formatOffset(getOffsetMinutes(probe, timeZone));
+
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}${offset}`;
+}
+
+function currentLocalReference(timeZone: string) {
+  const now = new Date();
+  const parts = formatPartsInTimeZone(now, timeZone);
+  const offset = formatOffset(getOffsetMinutes(now, timeZone));
+
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}${offset}`;
+}
+
+function buildInstruction(timeZone: string) {
   return `Voce e o processador do "2o Cerebro TDAH". Extraia informacoes estruturadas de textos rapidos, verbosos ou desordenados de pessoas com TDAH.
 
 CRITERIOS DE PRIORIDADE:
@@ -57,12 +141,15 @@ EXTRACAO DE LOCAL:
 - O campo local deve ser amigavel para Google Maps.
 
 DATA/HORA:
-- Converta termos relativos para ISO baseado na data atual.
+- O usuario fala no fuso ${timeZone}.
+- Converta termos relativos para ISO 8601 com offset explicito do fuso local.
+- Preserve o horario falado pelo usuario. Exemplo: se ele disser "20h50", retorne 20:50 no horario local, nunca converta para UTC.
+- Nunca retorne "Z" quando houver horario local falado; use offset, por exemplo "2026-05-14T20:50:00-03:00".
 
 INSIGHT:
 - Gere um insight empatico e executavel de 1 frase para reduzir paralisia de decisao.
 
-DATA DE REFERENCIA: ${new Date().toISOString()}.`;
+DATA DE REFERENCIA LOCAL: ${currentLocalReference(timeZone)}.`;
 }
 
 function normalizeJsonText(text: string) {
@@ -72,7 +159,7 @@ function normalizeJsonText(text: string) {
     .replace(/\s*```$/i, "");
 }
 
-async function generateWithVertex(text: string) {
+async function generateWithVertex(text: string, timeZone: string) {
   const auth = new GoogleAuth({
     scopes: ["https://www.googleapis.com/auth/cloud-platform"]
   });
@@ -92,7 +179,7 @@ async function generateWithVertex(text: string) {
     },
     body: JSON.stringify({
       systemInstruction: {
-        parts: [{ text: buildInstruction() }]
+        parts: [{ text: buildInstruction(timeZone) }]
       },
       contents: [
         {
@@ -124,7 +211,7 @@ async function generateWithVertex(text: string) {
   return JSON.parse(normalizeJsonText(output));
 }
 
-async function generateWithApiKey(text: string) {
+async function generateWithApiKey(text: string, timeZone: string) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -136,7 +223,7 @@ async function generateWithApiKey(text: string) {
     model: MODEL,
       contents: text,
       config: {
-        systemInstruction: buildInstruction(),
+        systemInstruction: buildInstruction(timeZone),
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -179,7 +266,10 @@ async function generateWithApiKey(text: string) {
 
 export async function POST(request: Request) {
   try {
-    const { text } = (await request.json().catch(() => ({}))) as { text?: string };
+    const { text, timeZone } = (await request.json().catch(() => ({}))) as {
+      text?: string;
+      timeZone?: string;
+    };
 
     if (!text?.trim()) {
       return NextResponse.json(
@@ -188,16 +278,32 @@ export async function POST(request: Request) {
       );
     }
 
+    const userTimeZone = safeTimeZone(timeZone);
     let data: {
+      dataHoraDetectada?: string;
       local?: string;
       mapsUrl?: string;
       wazeUrl?: string;
     };
 
     try {
-      data = await generateWithVertex(text);
+      data = await generateWithVertex(text, userTimeZone);
     } catch {
-      data = await generateWithApiKey(text);
+      data = await generateWithApiKey(text, userTimeZone);
+    }
+
+    data.dataHoraDetectada = normalizeLocalDateTime(
+      data.dataHoraDetectada,
+      userTimeZone
+    ) as string | undefined;
+
+    if (
+      typeof data.local === "string" &&
+      ["", "null", "undefined", "n/a", "nao informado"].includes(
+        data.local.trim().toLowerCase()
+      )
+    ) {
+      data.local = undefined;
     }
 
     if (data.local) {

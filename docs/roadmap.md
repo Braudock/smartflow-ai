@@ -13,7 +13,9 @@
 - Cards com botoes Google Maps e Waze.
 - Layout mobile ajustado para nao ficar apertado.
 - Microfone mantem captura ate o usuario parar.
-- Alerta forte para compromissos no horario com som, vibracao e tela de urgencia.
+- Horarios falados preservados no fuso local do navegador.
+- Alertas em camadas para compromissos com preparo, saida sugerida, falta pouco, horario exato e atraso.
+- Alerta forte em tela cheia com som repetido, vibracao, titulo piscando e acoes de rota.
 
 ## Depois
 

@@ -60,7 +60,9 @@ firebase deploy --only firestore,apphosting:smartflow-ai
 - Microfone mantem a escuta ativa e reinicia automaticamente quando o navegador encerra uma sessao de fala.
 - Transcricao do microfone deduplica trechos repetidos enviados pelo navegador.
 - Microfone para limpo quando a aba fica oculta, evitando travamento do Chrome mobile.
-- Compromissos no horario disparam alerta forte com tela vermelha, som repetido e vibracao no celular.
+- Horarios falados sao preservados no fuso local do navegador, evitando deslocamento indevido de horas.
+- Compromissos disparam alertas em camadas: preparo, saida sugerida, falta pouco, horario exato e atraso.
+- Alertas fortes agora ocupam a tela inteira, piscam o titulo da aba, repetem som/vibracao e destacam Maps/Waze quando houver local.
 - Salvamento ficou tolerante a falha da IA/Calendar e mostra erro de sincronizacao quando Firestore falha.
 - Commit da correcao mobile: `12d6c7d Improve mobile layout and map actions`.
 
@@ -85,7 +87,7 @@ Cards menos apertados.
 Texto quebra linha dentro do card.
 Maps e Waze aparecem como botoes clicaveis.
 Microfone continua captando ate o usuario tocar novamente para parar.
-Alerta forte aparece no horario do compromisso enquanto o app estiver aberto/ativo.
+Alertas mostram preparo, rota, contagem de urgencia e atraso enquanto o app estiver aberto/ativo.
 ```
 
 ## Gemini/OAuth
@@ -135,4 +137,5 @@ GET /: 200
 POST /api/gemini/process: ok com mapsUrl e wazeUrl
 POST /api/gemini/test: ok
 Botao Salvar: registra primeiro no Firestore e cria Calendar em segundo plano.
+POST /api/gemini/process: preserva 20h50 como 20:50 no fuso local, sem converter para 17:50.
 ```
